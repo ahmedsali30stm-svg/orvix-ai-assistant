@@ -21,11 +21,16 @@ export function Home({ store }: { store: Store }) {
   const [partial, setPartial] = useState("");
   const [listening, setListening] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [wakeOn, setWakeOn] = useState(() => {
+    try { return localStorage.getItem("orvix.wake") !== "0"; } catch { return true; }
+  });
+  const [wakeListening, setWakeListening] = useState(false);
   const [panelsOpen, setPanelsOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognizerRef = useRef<{ start: () => void; stop: () => void } | null>(null);
+  const wakeRef = useRef<{ start: () => void; stop: () => void } | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -48,7 +53,9 @@ export function Home({ store }: { store: Store }) {
       recognizerRef.current?.stop();
       return;
     }
+    // manual mic = always capture next utterance, wake detection bypassed
     const rec = createRecognizerSafely({
+      continuous: false,
       onPartial: (p) => {
         setPartial(p);
         store.setOrbLocal("LISTENING", "Listening…");
@@ -56,7 +63,11 @@ export function Home({ store }: { store: Store }) {
       onFinal: (t) => {
         setPartial("");
         store.stopSpeaking?.();
-        store.sendMessage(t);
+        // allow manual "hey orvix ..." to also work — strip wake word if present
+        import("../voice/voice").then(({ stripWakeWord }) => {
+          const clean = stripWakeWord(t).trim() || t;
+          store.sendMessage(clean);
+        });
       },
       onEnd: () => {
         setListening(false);
@@ -73,6 +84,121 @@ export function Home({ store }: { store: Store }) {
     setListening(true);
     rec.start();
   };
+
+  // ── Wake word: "hey orvix" continuous listener ──
+  const triggerCommandListening = (initial?: string) => {
+    // stop wake loop while capturing command
+    wakeRef.current?.stop();
+    setWakeListening(false);
+    const rec = createRecognizerSafely({
+      continuous: false,
+      onPartial: (p) => {
+        setPartial(p);
+        store.setOrbLocal("LISTENING", "Listening…");
+      },
+      onFinal: (t) => {
+        setPartial("");
+        store.stopSpeaking?.();
+        import("../voice/voice").then(({ stripWakeWord }) => {
+          const merged = (initial ? initial + " " : "") + t;
+          const clean = stripWakeWord(merged).trim() || merged.trim();
+          if (clean) store.sendMessage(clean);
+        });
+      },
+      onEnd: () => {
+        setListening(false);
+        setPartial("");
+        store.setOrbLocal("IDLE");
+      },
+      onError: () => {
+        setListening(false);
+        setPartial("");
+        store.setOrbLocal("IDLE");
+      },
+    });
+    recognizerRef.current = rec;
+    setListening(true);
+    store.setOrbLocal("LISTENING", "Yes?");
+    // chime
+    try { import("../voice/voice").then(({ speak }) => speak("Yes?", "en-US")); } catch {}
+    rec.start();
+  };
+
+  useEffect(() => {
+    try { localStorage.setItem("orvix.wake", wakeOn ? "1" : "0"); } catch {}
+  }, [wakeOn]);
+
+  // start/stop wake listener
+  useEffect(() => {
+    if (!wakeOn || listening) {
+      wakeRef.current?.stop();
+      setWakeListening(false);
+      return;
+    }
+    let stopped = false;
+    const startWake = () => {
+      const rec = createRecognizerSafely({
+        continuous: true,
+        onPartial: (p) => {
+          import("../voice/voice").then(({ containsWakeWord, stripWakeWord }) => {
+            if (containsWakeWord(p)) {
+              const remainder = stripWakeWord(p);
+              rec.stop();
+              if (stopped) return;
+              store.setOrbLocal("WAKE", "Hey Orvix — listening…");
+              if (remainder) {
+                // wake + command in same utterance: "hey orvix what time is it"
+                store.stopSpeaking?.();
+                store.sendMessage(remainder);
+              } else {
+                triggerCommandListening();
+              }
+            }
+          });
+        },
+        onFinal: (t) => {
+          import("../voice/voice").then(({ containsWakeWord, stripWakeWord }) => {
+            if (containsWakeWord(t)) {
+              const remainder = stripWakeWord(t);
+              rec.stop();
+              if (stopped) return;
+              store.setOrbLocal("WAKE", "Hey Orvix — listening…");
+              if (remainder) {
+                store.stopSpeaking?.();
+                store.sendMessage(remainder);
+              } else {
+                triggerCommandListening(remainder);
+              }
+            }
+          });
+        },
+        onEnd: () => {
+          setWakeListening(false);
+          if (!stopped && wakeOn && !listening) {
+            // auto-restart wake loop (Chrome ends continuous after ~5s silence)
+            setTimeout(() => { if (!stopped && wakeOn && !listening) startWake(); }, 400);
+          } else {
+            store.setOrbLocal("IDLE");
+          }
+        },
+        onError: () => {
+          setWakeListening(false);
+          if (!stopped && wakeOn && !listening) setTimeout(startWake, 900);
+        },
+      });
+      wakeRef.current = rec;
+      setWakeListening(true);
+      store.setOrbLocal("WAKE", "Say “Hey Orvix”");
+      rec.start();
+    };
+    startWake();
+    return () => {
+      stopped = true;
+      wakeRef.current?.stop();
+      setWakeListening(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wakeOn, listening]);
 
   // Speak finished assistant replies aloud.
   useEffect(() => {
@@ -112,7 +238,13 @@ export function Home({ store }: { store: Store }) {
         <div className="flex-1 min-w-0 flex flex-col items-center">
           {/* orb — always the centered hero */}
           <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-1 px-6">
-            <Orb_host state={listening ? "LISTENING" : store.orb} activity={listening && partial ? `“${partial}”` : store.activity} onInterrupt={() => import("../voice/voice").then((m) => m.stopSpeaking())} />
+            <Orb_host
+              state={listening ? "LISTENING" : wakeListening ? "WAKE" : store.orb}
+              activity={
+                listening && partial ? `“${partial}”` : wakeListening ? 'Say “Hey Orvix”…' : store.activity
+              }
+              onInterrupt={() => import("../voice/voice").then((m) => m.stopSpeaking())}
+            />
 
             {store.entries.length === 0 && (
               <div className="anim-fade-in flex flex-col items-center gap-3 text-center -mt-2">
@@ -212,10 +344,21 @@ export function Home({ store }: { store: Store }) {
                   {autoSpeak ? <IconSpeaker width={16} height={16} /> : <IconSpeakerOff width={16} height={16} />}
                 </button>
                 <button
+                  onClick={() => setWakeOn((v) => !v)}
+                  title={wakeOn ? "Wake word “Hey Orvix” on — click to disable" : "Wake word off — click to enable “Hey Orvix”"}
+                  className={`px-2.5 py-1.5 rounded-full text-[10px] tracking-[0.12em] uppercase font-bold border transition ${
+                    wakeOn
+                      ? "bg-cyan-400/15 text-cyan-300 border-cyan-400/30"
+                      : "bg-white/5 text-slate-500 border-white/10 hover:text-slate-300"
+                  } ${wakeListening ? "animate-pulse" : ""}`}
+                >
+                  {wakeOn ? "Hey Orvix ✓" : "Wake off"}
+                </button>
+                <button
                   onClick={toggleMic}
-                  title="Voice input"
+                  title={wakeOn ? "Voice input (or just say “Hey Orvix”)" : "Voice input"}
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-                    listening ? "bg-red-500/90 text-white" : "bg-white/8 hover:bg-white/15 text-slate-300"
+                    listening ? "bg-red-500/90 text-white" : wakeListening ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30" : "bg-white/8 hover:bg-white/15 text-slate-300"
                   }`}
                   style={listening ? { animation: "pulseRing 1.6s ease-out infinite" } : undefined}
                 >
@@ -230,7 +373,7 @@ export function Home({ store }: { store: Store }) {
                 </button>
               </div>
               <div className="text-center text-[10px] tracking-[0.22em] text-slate-600 mt-2 uppercase hud-title">
-                {store.connected ? "Link active" : "Offline"} · click the orb to stop voice
+                {store.connected ? "Link active" : "Offline"} · {wakeOn ? (wakeListening ? "Listening for “Hey Orvix”…" : "Wake word on") : "Wake word off"} · click orb to stop voice
               </div>
             </div>
           </div>
@@ -344,7 +487,7 @@ function Muted({ children }: { children: React.ReactNode }) {
 
 // Local import helper to avoid pulling voice into SSR-ish contexts.
 import { createRecognizer, voiceSupport, stopSpeaking } from "../voice/voice";
-type RecogOpts = Omit<Parameters<typeof createRecognizer>[0], "lang">;
+type RecogOpts = Omit<Parameters<typeof createRecognizer>[0], "lang"> & { lang?: string };
 function createRecognizerSafely(opts: RecogOpts) {
   const vs = voiceSupport();
   if (!vs.stt) {

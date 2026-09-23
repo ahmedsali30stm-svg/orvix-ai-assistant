@@ -12,12 +12,28 @@ export function voiceSupport(): VoiceSupport {
   return { stt: Boolean(w.SpeechRecognition || w.webkitSpeechRecognition), tts: "speechSynthesis" in window };
 }
 
+export const WAKE_WORDS = ["hey orvix", "hey orvix", "hi orvix", "hey orviks", "orvix"] as const;
+
+export function containsWakeWord(text: string): boolean {
+  const s = text.toLowerCase().replace(/[^a-z\u0600-\u06FF ]/g, " ").replace(/\s+/g, " ").trim();
+  // English variants
+  if (s.includes("hey orvix") || s.includes("hi orvix") || s.includes("hay orvix") || s === "orvix" || s.endsWith(" orvix")) return true;
+  // Arabic variant يا أورفكس
+  if (s.includes("يا اورفكس") || s.includes("يا أورفكس") || s.includes("اورفكس")) return true;
+  return false;
+}
+
+export function stripWakeWord(text: string): string {
+  return text.replace(/hey\s+orvix|hi\s+orvix|hay\s+orvix|orvix/gi, "").replace(/يا\s+أورفكس|يا\s+اورفكس|أورفكس|اورفكس/g, "").trim().replace(/^[,،\s]+/, "");
+}
+
 export function createRecognizer(opts: {
   lang: string;
   onPartial: (text: string) => void;
   onFinal: (text: string) => void;
   onEnd: () => void;
   onError: (err: string) => void;
+  continuous?: boolean;
 }): { start: () => void; stop: () => void } {
   const w = window as unknown as Record<string, unknown>;
   const Ctor = (w.SpeechRecognition || w.webkitSpeechRecognition) as
@@ -38,7 +54,7 @@ export function createRecognizer(opts: {
   }
   const rec = new Ctor();
   rec.lang = opts.lang;
-  rec.continuous = false;
+  rec.continuous = opts.continuous ?? false;
   rec.interimResults = true;
   let finalText = "";
   rec.onresult = (e) => {
