@@ -95,6 +95,9 @@ export class PiperLocalTTS implements TTSProvider {
   private webFallback = new WebSpeechTTS();
   private speaking = false;
   private audio: HTMLAudioElement | null = null;
+  private currentUrl: string | null = null;
+  private currentAbort: AbortController | null = null;
+  private currentResolve: (()=>void) | null = null;
 
   async voices(): Promise<TTSVoice[]> { return VOICES.filter(v=>v.engine==="piper-en"); }
   normalizeForSpeech(raw:string): string { return normalizeForEnglishSpeech(raw); }
@@ -102,14 +105,13 @@ export class PiperLocalTTS implements TTSProvider {
   async speak(text:string, opts?:{ voiceId?:string; rate?:number; volume?:number; onSentence?:(i:number)=>void }): Promise<void> {
     const norm = this.normalizeForSpeech(text);
     const sentences = splitSentences(norm);
-    // Try local Piper endpoint sentence-by-sentence for streaming (first sentence fast)
     this.speaking = true;
     for (let i=0;i<sentences.length;i++) {
       if (!this.speaking) break;
       opts?.onSentence?.(i);
       const ok = await this.tryPiperSentence(sentences[i]!, opts);
       if (!ok) {
-        // fallback for this sentence
+        if (!this.speaking) break; // aborted mid-sentence — do not fallback
         await this.webFallback.speak(sentences[i]!, opts);
         if (!this.speaking) break;
       }
@@ -117,32 +119,63 @@ export class PiperLocalTTS implements TTSProvider {
     this.speaking = false;
   }
   private async tryPiperSentence(sentence:string, opts?:{ rate?:number; volume?:number }): Promise<boolean> {
+    const ac = new AbortController();
+    this.currentAbort = ac;
+    let url: string | null = null;
     try {
       const res = await fetch(`/api/voice/tts`, {
         method: "POST",
         headers: { "content-type":"application/json" },
         body: JSON.stringify({ text: sentence, voice: "en_US-lessac-medium", rate: opts?.rate ?? 1.0 }),
+        signal: ac.signal,
       });
       if (!res.ok) return false;
+      if (!this.speaking) return false;
       const blob = await res.blob();
       if (!this.speaking) return false;
-      const url = URL.createObjectURL(blob);
-      await new Promise<void>((resolve, reject) => {
-        const a = new Audio(url);
+      url = URL.createObjectURL(blob);
+      this.currentUrl = url;
+      const wavOk = await new Promise<boolean>((resolve) => {
+        this.currentResolve = () => resolve(true);
+        const a = new Audio(url!);
         this.audio = a;
         a.volume = opts?.volume ?? 1;
-        a.onended = () => { URL.revokeObjectURL(url); resolve(); };
-        a.onerror = () => { URL.revokeObjectURL(url); reject(new Error("audio error")); };
-        // allow interruption: if stop() called, audio.pause() will trigger?
-        a.play().catch(reject);
+        let done = false;
+        const finish = (ok:boolean) => {
+          if (done) return;
+          done = true;
+          try { URL.revokeObjectURL(url!); } catch {}
+          this.currentUrl = null;
+          this.currentResolve = null;
+          resolve(ok);
+        };
+        a.onended = () => finish(true);
+        a.onerror = () => finish(false);
+        a.play().catch(() => finish(false));
+        // if stop() is called, it will pause and trigger finish via interval
+        const iv = setInterval(() => {
+          if (!this.speaking) { try{ a.pause(); }catch{} finish(true); clearInterval(iv); }
+        }, 60);
+        a.onended = () => { clearInterval(iv); finish(true); };
+        a.onerror = () => { clearInterval(iv); finish(false); };
       });
-      return true;
-    } catch { return false; }
+      return wavOk;
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return false; // aborted — caller will check speaking
+      return false;
+    } finally {
+      if (url && this.currentUrl === url) { try{ URL.revokeObjectURL(url); }catch{} this.currentUrl=null; }
+      if (this.currentAbort === ac) this.currentAbort = null;
+    }
   }
   stop(): void {
     this.speaking = false;
+    if (this.currentAbort) { try{ this.currentAbort.abort(); }catch{} this.currentAbort=null; }
     this.webFallback.stop();
+    if (this.currentUrl) { try{ URL.revokeObjectURL(this.currentUrl); }catch{} this.currentUrl=null; }
+    if (this.currentResolve) { const r=this.currentResolve; this.currentResolve=null; try{ r(); }catch{} }
     if (this.audio) { try{ this.audio.pause(); this.audio.src=""; }catch{} this.audio=null; }
+    try{ window.speechSynthesis.cancel(); }catch{}
   }
   isSpeaking(): boolean { return this.speaking || this.webFallback.isSpeaking() || !!this.audio && !this.audio.paused; }
 }

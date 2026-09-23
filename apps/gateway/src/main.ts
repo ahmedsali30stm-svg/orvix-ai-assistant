@@ -130,7 +130,7 @@ registry.register(monitorCreateTool(monitorRepo));
 registry.register(reminderCreateTool(reminders));
 
 // ── Fastify app ───────────────────────────────────────────────────────────
-const app = Fastify({ logger: false, trustProxy: false });
+const app = Fastify({ logger: false, trustProxy: false, bodyLimit: 10 * 1024 * 1024 });
 await app.register(fastifyRateLimit, {
   global: true,
   max: 100,

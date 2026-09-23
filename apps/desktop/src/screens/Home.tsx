@@ -6,8 +6,7 @@ import {
   IconChevronDown, IconChevronUp,
 } from "../components/icons";
 import { Markdown } from "../components/Markdown";
-
-// ── Console (Home) = the live conversation space ──────────────────────────
+import { WhisperLocalSTT, WebSpeechSTT } from "../voice/STTProvider";
 
 const CHIPS = [
   { label: "What time is it?", text: "what time is it?" },
@@ -32,6 +31,9 @@ export function Home({ store }: { store: Store }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const recognizerRef = useRef<{ start: () => void; stop: () => void } | null>(null);
   const wakeRef = useRef<{ start: () => void; stop: () => void } | null>(null);
+  const sttRef = useRef<WhisperLocalSTT | WebSpeechSTT | null>(null);
+  const [localSTTAvailable, setLocalSTTAvailable] = useState<boolean | null>(null);
+  const [lastSTTEngine, setLastSTTEngine] = useState<string>("");
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -49,25 +51,76 @@ export function Home({ store }: { store: Store }) {
     setText("");
   };
 
-  const toggleMic = () => {
+  const toggleMic = async () => {
     if (listening) {
+      // manual stop (push-to-talk second click) — works for both WebSpeech and Whisper local
+      if (sttRef.current) {
+        try { await sttRef.current.stop(); } catch {}
+        sttRef.current = null;
+      }
       recognizerRef.current?.stop();
+      setListening(false);
+      setPartial("");
       return;
     }
-    // manual mic = always capture next utterance, wake detection bypassed
+    const useLocal = localSTTAvailable === true;
+    if (useLocal) {
+      const stt = new WhisperLocalSTT();
+      sttRef.current = stt;
+      setListening(true);
+      setLastSTTEngine("whisper.cpp base (local)");
+      store.setOrbLocal("LISTENING", "Listening (local Whisper)…");
+      try {
+        await stt.start({
+          langHint: "en-US",
+          onPartial: (p) => { setPartial(p); store.setOrbLocal("LISTENING", p || "Listening (local)…"); },
+          onFinal: (t) => {
+            setPartial("");
+            setListening(false);
+            sttRef.current = null;
+            store.setOrbLocal("IDLE");
+            if (!t.trim()) return;
+            try { store.stopSpeaking?.(); } catch {}
+            import("../voice/voice").then(({ stripWakeWord }) => {
+              const clean = stripWakeWord(t).trim() || t;
+              if (clean) store.sendMessage(clean);
+            });
+          },
+          onError: (e) => {
+            setListening(false);
+            sttRef.current = null;
+            // if local failed, provider already fell back internally and will show fallback via error
+            if (e.includes("fallback")) {
+              setLastSTTEngine("Web Speech (browser fallback — local failed)");
+              store.setOrbLocal("ERROR", e.slice(0,80));
+            } else {
+              store.setOrbLocal("ERROR", e.slice(0,60));
+            }
+            setPartial("");
+          },
+        });
+      } catch (e) {
+        setListening(false);
+        setLastSTTEngine("Web Speech (browser fallback — local error)");
+        store.setOrbLocal("ERROR", String(e).slice(0,60));
+      }
+      return;
+    }
+    // fallback: Web Speech (browser, NOT local) — clearly labeled
+    setLastSTTEngine("Web Speech (browser fallback)");
     const rec = createRecognizerSafely({
       continuous: false,
       onPartial: (p) => {
         setPartial(p);
-        store.setOrbLocal("LISTENING", "Listening…");
+        store.setOrbLocal("LISTENING", "Listening (browser fallback)…");
       },
       onFinal: (t) => {
         setPartial("");
-        store.stopSpeaking?.();
-        // allow manual "hey orvix ..." to also work — strip wake word if present
+        setListening(false);
+        try { store.stopSpeaking?.(); } catch {}
         import("../voice/voice").then(({ stripWakeWord }) => {
           const clean = stripWakeWord(t).trim() || t;
-          store.sendMessage(clean);
+          if (clean) store.sendMessage(clean);
         });
       },
       onEnd: () => {
@@ -86,14 +139,42 @@ export function Home({ store }: { store: Store }) {
     rec.start();
   };
 
-  // ── Wake word: "hey orvix" continuous listener ──
-  const triggerCommandListening = (initial?: string) => {
-    // barge-in: abort previous turn + stop TTS
+  // ── Wake word → command listener (uses same STT selection) ──
+  const triggerCommandListening = async (initial?: string) => {
     try { store.abortCurrent?.(); } catch {}
     try { store.stopSpeaking?.(); } catch {}
-    // stop wake loop while capturing command
     wakeRef.current?.stop();
     setWakeListening(false);
+    const useLocal = localSTTAvailable === true;
+    if (useLocal) {
+      const stt = new WhisperLocalSTT();
+      sttRef.current = stt;
+      setListening(true);
+      setLastSTTEngine("whisper.cpp base (local)");
+      store.setOrbLocal("LISTENING", "Yes? (local)…");
+      try { const { speak } = await import("../voice/voice"); speak("Yes?", "en-US"); } catch {}
+      try {
+        await stt.start({
+          langHint: "en-US",
+          onPartial: (p) => { setPartial(p); store.setOrbLocal("LISTENING", p || "Listening (local)…"); },
+          onFinal: (t) => {
+            setPartial("");
+            setListening(false);
+            sttRef.current = null;
+            const merged = (initial ? initial + " " : "") + t;
+            import("../voice/voice").then(({ stripWakeWord }) => {
+              const clean = stripWakeWord(merged).trim() || merged.trim();
+              if (clean) store.sendMessage(clean);
+              else store.setOrbLocal("IDLE");
+            });
+          },
+          onError: () => { setListening(false); sttRef.current=null; store.setOrbLocal("IDLE"); },
+        });
+      } catch {}
+      return;
+    }
+    // fallback Web Speech for wake command
+    setLastSTTEngine("Web Speech (browser fallback)");
     const rec = createRecognizerSafely({
       continuous: false,
       onPartial: (p) => {
@@ -102,6 +183,7 @@ export function Home({ store }: { store: Store }) {
       },
       onFinal: (t) => {
         setPartial("");
+        setListening(false);
         try { store.stopSpeaking?.(); } catch {}
         import("../voice/voice").then(({ stripWakeWord }) => {
           const merged = (initial ? initial + " " : "") + t;
@@ -123,14 +205,22 @@ export function Home({ store }: { store: Store }) {
     recognizerRef.current = rec;
     setListening(true);
     store.setOrbLocal("LISTENING", "Yes?");
-    // chime
-    try { import("../voice/voice").then(({ speak }) => speak("Yes?", "en-US")); } catch {}
+    try { const { speak } = await import("../voice/voice"); speak("Yes?", "en-US"); } catch {}
     rec.start();
   };
 
   useEffect(() => {
     try { localStorage.setItem("orvix.wake", wakeOn ? "1" : "0"); } catch {}
   }, [wakeOn]);
+
+  // check local STT/TTS availability (true local vs fallback) — for UI honesty per spec point 4
+  useEffect(() => {
+    fetch("/api/voice/status").then(r=>r.json()).then((j: {stt?:{whisperBase?:boolean}})=> {
+      const avail = !!j?.stt?.whisperBase;
+      setLocalSTTAvailable(avail);
+      setLastSTTEngine(avail ? "whisper.cpp base (local)" : "Web Speech (browser fallback)");
+    }).catch(()=> setLocalSTTAvailable(false));
+  }, []);
 
   // start/stop wake listener
   useEffect(() => {
@@ -417,7 +507,7 @@ export function Home({ store }: { store: Store }) {
                 </button>
               </div>
               <div className="text-center text-[10px] tracking-[0.22em] text-slate-600 mt-2 uppercase hud-title">
-                {store.connected ? "Link active" : "Offline"} · {wakeOn ? (wakeListening ? "Listening for “Hey Orvix”…" : "Wake word on") : "Wake word off"} · click orb to stop voice
+                {store.connected ? "Link active" : "Offline"} · {wakeOn ? (wakeListening ? "Listening for “Hey Orvix”…" : "Wake on") : "Wake off"} · STT: {lastSTTEngine || (localSTTAvailable === null ? "…" : localSTTAvailable ? "local Whisper" : "browser fallback")} · click orb to stop voice
               </div>
             </div>
           </div>
