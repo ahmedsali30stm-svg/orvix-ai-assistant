@@ -1,0 +1,22 @@
+(node:5900) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-23T17:06:39.973Z","level":"info","msg":"ui.serving","dir":"C:\\Users\\aliet\\Desktop\\JS\\apps\\desktop\\dist"}
+{"ts":"2026-09-23T17:06:39.990Z","level":"info","msg":"gateway.ready","url":"http://127.0.0.1:8787","brain":"openai/gpt-oss-20b","tools":17,"dataDir":"C:\\Users\\aliet\\Desktop\\JS\\.jarvis","ui":"C:\\Users\\aliet\\Desktop\\JS\\apps\\desktop\\dist"}
+{"ts":"2026-09-23T17:06:40.244Z","level":"info","msg":"ws.connected","clients":1}
+{"ts":"2026-09-23T17:06:40.271Z","level":"info","msg":"ws.connected","clients":2}
+{"ts":"2026-09-23T17:06:40.286Z","level":"info","msg":"ws.connected","clients":3}
+{"ts":"2026-09-23T17:07:29.378Z","level":"info","msg":"ws.disconnected","clients":2}
+{"ts":"2026-09-23T17:07:29.379Z","level":"info","msg":"ws.disconnected","clients":1}
+{"ts":"2026-09-23T17:07:29.394Z","level":"info","msg":"ws.disconnected","clients":0}
+{"ts":"2026-09-23T17:07:43.081Z","level":"info","msg":"ws.connected","clients":1}
+{"ts":"2026-09-23T17:07:43.141Z","level":"info","msg":"ws.connected","clients":2}
+{"ts":"2026-09-23T17:07:43.175Z","level":"info","msg":"ws.connected","clients":3}
+{"ts":"2026-09-23T17:09:28.038Z","level":"info","msg":"ws.disconnected","clients":2}
+{"ts":"2026-09-23T17:09:28.207Z","level":"info","msg":"ws.connected","clients":3}
+{"ts":"2026-09-23T17:09:30.590Z","level":"info","msg":"ws.disconnected","clients":2}
+{"ts":"2026-09-23T17:09:30.646Z","level":"info","msg":"ws.connected","clients":3}
+{"ts":"2026-09-23T17:58:12.198Z","level":"info","msg":"ws.connected","clients":4}
+{"ts":"2026-09-23T17:58:45.277Z","level":"info","msg":"ws.disconnected","clients":3}
+{"ts":"2026-09-23T18:00:24.170Z","level":"info","msg":"ws.disconnected","clients":2}
+{"ts":"2026-09-23T18:00:24.173Z","level":"info","msg":"ws.disconnected","clients":1}
+{"ts":"2026-09-23T18:00:24.173Z","level":"info","msg":"ws.disconnected","clients":0}

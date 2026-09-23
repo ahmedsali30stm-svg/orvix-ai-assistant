@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+*.db
+*.db-wal
+*.db-shm
+.jarvis/

@@ -1,0 +1,38 @@
+{
+  "name": "jarvis",
+  "private": true,
+  "version": "0.1.0",
+  "description": "JARVIS — personal & business AI operating system",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "typecheck": "tsc -b tsconfig.src.json && tsc --noEmit -p apps/desktop",
+    "test": "node --experimental-transform-types --test \"tests/**/*.test.ts\"",
+    "dev": "node --experimental-transform-types --env-file-if-exists=.env apps/gateway/src/main.ts",
+    "dev:worker": "node --experimental-transform-types --env-file-if-exists=.env apps/worker/src/main.ts",
+    "start": "npm run typecheck && npm run dev",
+    "ui": "npm run dev --workspace @jarvis/desktop",
+    "ui:build": "npm run build --workspace @jarvis/desktop",
+    "db:reset": "node -e \"import('node:fs').then(fs=>{for (const f of ['jarvis.db','jarvis.db-wal','jarvis.db-shm']) fs.rmSync(f,{force:true}); console.log('database reset')})\"",
+    "lint": "eslint . --max-warnings 50",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md}\" --ignore-path .gitignore",
+    "backup": "node scripts/backup.mjs"
+  },
+  "overrides": {
+    "uuid": "^11.1.0",
+    "exceljs": {
+      "uuid": "^11.1.0"
+    }
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.9",
+    "typescript-eslint": "^8.70.1"
+  }
+}

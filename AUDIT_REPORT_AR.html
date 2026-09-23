@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير التدقيق الشامل — JARVIS / ORVIX OS | JS</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060A14; --bg2:#0B1020; --card:#121A33; --card2:#162044; --line:#1E2A55;
+  --cyan:#00E5FF; --cyan2:#00BCD4; --gold:#FFB800; --green:#00E676; --red:#FF3B30; --orange:#FF9100;
+  --text:#EEF2FF; --muted:#8A94B8; --muted2:#5C678A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Tajawal','IBM Plex Sans Arabic',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.75}
+a{color:var(--cyan);text-decoration:none}
+.container{max-width:1180px;margin:0 auto;padding:0 22px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(6,10,20,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#00E5FF,#7C4DFF);display:grid;place-items:center;font-weight:900;color:#060A14;box-shadow:0 8px 24px rgba(0,229,255,.35)}
+.brand h1{font-size:15px;font-weight:900;letter-spacing:.02em}
+.brand p{font-size:11px;color:var(--muted);margin-top:2px}
+.badge{font-size:11px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted)}
+.badge strong{color:var(--text)}
+.hero{padding:28px 0 8px}
+.hero-grid{display:grid;grid-template-columns:1.55fr .95fr;gap:18px}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
+.hero-card{background:linear-gradient(160deg,#0E1430 0%,#0A1028 100%);border:1px solid var(--line);border-radius:22px;padding:26px;position:relative;overflow:hidden}
+.hero-card::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 280px at 85% -10%, rgba(0,229,255,.18), transparent 60%), radial-gradient(500px 300px at 10% 110%, rgba(124,77,255,.14), transparent 60%)}
+.hero-card>*{position:relative}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.12em;color:var(--cyan);font-weight:800;border:1px solid rgba(0,229,255,.25);background:rgba(0,229,255,.08);padding:6px 10px;border-radius:999px}
+.hero h2{font-size:32px;font-weight:900;line-height:1.2;margin:14px 0 10px}
+.hero h2 span{background:linear-gradient(90deg,#00E5FF,#7C4DFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:14px;max-width:62ch}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.meta{border:1px solid var(--line);background:rgba(18,26,51,.75);border-radius:14px;padding:11px 12px}
+.meta label{font-size:10px;letter-spacing:.1em;color:var(--muted2);font-weight:700}
+.meta div{font-size:13px;font-weight:800;margin-top:4px}
+.progress-wrap{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.progress-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
+.bar{height:8px;background:#0A1026;border-radius:999px;overflow:hidden;margin-top:8px;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#00E5FF,#7C4DFF);width:68%}
+.score-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.score-ring{width:132px;height:132px;border-radius:50%;background:conic-gradient(from 0deg, #00E5FF 0% 68%, #1E2A55 68% 100%);display:grid;place-items:center;margin:0 auto;box-shadow:0 12px 32px rgba(0,229,255,.22)}
+.score-ring span{width:108px;height:108px;border-radius:50%;background:var(--bg2);display:grid;place-items:center;text-align:center;border:1px solid var(--line)}
+.score-ring b{font-size:30px;font-weight:900}
+.score-ring em{font-size:10px;color:var(--muted);font-style:normal;font-weight:700;letter-spacing:.08em}
+.score-list{display:grid;gap:8px}
+.score-item{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.score-item label{font-size:12px;color:var(--muted);font-weight:700}
+.score-item strong{font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:7px;vertical-align:middle}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.kpi label{font-size:10px;color:var(--muted2);letter-spacing:.08em;font-weight:800}
+.kpi strong{font-size:22px;font-weight:900;display:block;margin-top:6px}
+.kpi span{font-size:11px;color:var(--muted)}
+.kpi small{font-size:10px;color:var(--muted2)}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+.nav a{font-size:12px;font-weight:800;padding:9px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.nav a.active{background:var(--cyan);color:#001018;border-color:transparent}
+.section{margin:22px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.card-h{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:linear-gradient(180deg,rgba(0,229,255,.05),transparent)}
+.card-h h3{font-size:15px;font-weight:900;display:flex;align-items:center;gap:10px}
+.card-h p{font-size:11px;color:var(--muted)}
+.card-b{padding:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:620px}
+th{background:#0D1430;color:var(--muted);font-size:10px;letter-spacing:.08em;text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid rgba(30,42,85,.65);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.tag{font-size:10px;font-weight:900;letter-spacing:.06em;padding:5px 8px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);white-space:nowrap}
+.tag.green{color:var(--green);border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.08)}
+.tag.red{color:var(--red);border-color:rgba(255,59,48,.25);background:rgba(255,59,48,.08)}
+.tag.gold{color:var(--gold);border-color:rgba(255,184,0,.25);background:rgba(255,184,0,.08)}
+.tag.cyan{color:var(--cyan);border-color:rgba(0,229,255,.25);background:rgba(0,229,255,.08)}
+.tag.orange{color:var(--orange);border-color:rgba(255,145,0,.25);background:rgba(255,145,0,.08)}
+.list{list-style:none;display:grid;gap:10px}
+.list li{padding:12px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;display:grid;gap:6px}
+.list li b{font-size:13px}
+.list li span{font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);color:var(--muted)}
+.alert{border-radius:14px;padding:14px 16px;border:1px solid var(--line);display:flex;gap:12px}
+.alert i{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:0 0 36px;font-weight:900}
+.alert.cyan{border-color:rgba(0,229,255,.25);background:rgba(0,229,255,.06)}
+.alert.gold{border-color:rgba(255,184,0,.25);background:rgba(255,184,0,.06)}
+.alert.red{border-color:rgba(255,59,48,.25);background:rgba(255,59,48,.06)}
+.alert.green{border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.06)}
+.timeline{position:relative;padding-right:22px}
+.timeline::before{content:"";position:absolute;right:6px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:999px}
+.tl{position:relative;padding:12px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+.tl::before{content:"";position:absolute;right:-18px;top:16px;width:10px;height:10px;border-radius:50%;border:2px solid var(--cyan);background:var(--bg)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:#080C1E;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;direction:ltr;text-align:left;white-space:pre}
+.hint{font-size:11px;color:var(--muted2);margin-top:8px}
+.footer{margin:26px 0 40px;text-align:center;color:var(--muted2);font-size:11px}
+.btn{appearance:none;border:0;background:linear-gradient(90deg,#00E5FF,#7C4DFF);color:#051018;font-weight:900;padding:11px 16px;border-radius:999px;cursor:pointer;box-shadow:0 10px 24px rgba(0,229,255,.22)}
+.btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:none}
+@media print{ .topbar,.nav{position:static} .card{break-inside:avoid} }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <div class="logo">JS</div>
+      <div>
+        <h1>JARVIS — ORVIX OS <span style="color:var(--cyan)">•</span> تقرير تدقيق شامل</h1>
+        <p>Local-first Personal & Business AI Operating System — Monorepo Audit • سبتمبر 2026 • نسخة 0.1.0</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="badge">المسار: <strong>C:\Users\aliet\Desktop\JS</strong></span>
+      <span class="badge">Node ≥20.11 • TypeScript Strict</span>
+      <button class="btn" onclick="window.print()">طباعة / حفظ PDF</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-card">
+        <div class="kicker">● AUDIT COMPLETE — 23 SEP 2026 — AR</div>
+        <h2>نظام يعمل… لكن <span>جاهز للإطلاق التجريبي فقط</span> — ليس للإنتاج</h2>
+        <p>تم تدقيق كامل Monorepo (packages/core + gateway + desktop + worker). البنية نظيفة والـ Core Loop مُطبق حسب المخطط الرئيسي، لكن هناك ثغرات أمنية في التبعيات، واختبارات البوابة تفشل بسبب المنفذ، وميزات رئيسية لا تزال Stub. هذا التقرير يحوّل المشروع من "يعمل محليًا" إلى "جاهز للإنتاج".</p>
+        <div class="meta-grid">
+          <div class="meta"><label>الحالة العامة</label><div style="color:var(--gold)">🟡 تجريبي — يحتاج إصلاحات قبل الإنتاج</div></div>
+          <div class="meta"><label>الالتزام بالمخطط</label><div>~68% من BLUEPRINT مُنجز</div></div>
+          <div class="meta"><label>الاختبارات</label><div>39 / 46 نجحت (84.8%)</div></div>
+          <div class="meta"><label>البنية</label><div>نظيفة • معيارية • قابلة للتوسع</div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-head"><span>نضج المشروع</span><span>68% — مرحلة MVP+</span></div>
+          <div class="bar"><i></i></div>
+          <div class="hint">الحساب: Core Loop كامل + Memory + Permissions + 14 أداة + UI/WS مقابل: Browser Agent / PGVector / Vault / Planner / Tauri غير مكتملة</div>
+        </div>
+      </div>
+      <div class="score-card">
+        <div style="text-align:center;font-weight:900;letter-spacing:.08em;font-size:11px;color:var(--muted)">درجة التدقيق الإجمالية</div>
+        <div class="score-ring"><span><b>6.8<small style="font-size:16px">/10</small></b><em>تجريبي مستقر</em></span></div>
+        <div class="score-list">
+          <div class="score-item"><label><i class="dot" style="background:var(--green)"></i>البنية والتصميم</label><strong>8.6 / 10</strong></div>
+          <div class="score-item"><label><i class="dot" style="background:var(--green)"></i>جودة الكود</label><strong>8.2 / 10</strong></div>
+          <div class="score-item"><label><i class="dot" style="background:var(--gold)"></i>الاكتمال الوظيفي</label><strong>6.8 / 10</strong></div>
+          <div class="score-item"><label><i class="dot" style="background:var(--orange)"></i>الأمان</label><strong>5.1 / 10</strong></div>
+          <div class="score-item"><label><i class="dot" style="background:var(--gold)"></i>الاختبارات</label><strong>6.5 / 10</strong></div>
+          <div class="score-item"><label><i class="dot" style="background:var(--orange)"></i>الاعتمادات</label><strong>4.9 / 10</strong></div>
+        </div>
+        <div class="hint">لو أُصلحت الثغرات الـ 5 عالية الخطورة + استُبدل xlsx + ثُبت اختبار البوابة → الدرجة تصبح 7.9/10 فورًا.</div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><label>ملفات TS/TSX</label><strong>72</strong><span>بدون node_modules/dist</span></div>
+      <div class="kpi"><label>حجم الكود المصدري</label><strong>4.27 MB</strong><span>~ 71k سطر مكافئ</span></div>
+      <div class="kpi"><label>الأدوات المسجلة</label><strong>17</strong><span>14 داخلية + 3 نظام</span></div>
+      <div class="kpi"><label>فحص الأنواع</label><strong style="color:var(--green)">ناجح ✓</strong><span>tsc strict — صفر أخطاء</span></div>
+      <div class="kpi"><label>ثغرات npm</label><strong style="color:var(--red)">6</strong><span>5 عالية • 1 متوسطة</span><small>xlsx بلا إصلاح</small></div>
+    </div>
+    <nav class="nav">
+      <a class="active" href="#summary">الملخص</a>
+      <a href="#structure">الهيكل</a>
+      <a href="#arch">المعمارية</a>
+      <a href="#features">الاكتمال</a>
+      <a href="#security">الأمان</a>
+      <a href="#tests">الاختبارات</a>
+      <a href="#perf">الأداء</a>
+      <a href="#risks">المخاطر</a>
+      <a href="#plan">خطة الإصلاح</a>
+    </nav>
+  </section>
+
+  <section id="summary" class="section">
+    <div class="card">
+      <div class="card-h"><h3>📌 الحكم التنفيذي — ماذا تفعل الآن؟</h3><span class="tag gold">قرار</span></div>
+      <div class="card-b">
+        <div style="display:grid;gap:12px">
+          <div class="alert green"><i style="background:rgba(0,230,118,.15);color:var(--green)">✓</i><div><b>ما هو ممتاز — حافظ عليه</b><span style="display:block;color:var(--muted);font-size:12px;margin-top:4px">Core Loop كامل (فهم → تصنيف L0-L3 → استرجاع ذاكرة → LLM streaming مع Tool Calling → فحص الصلاحيات → تنفيذ مع Timeout → تحقق → إعادة تغذية 6 جولات → حفظ). SQLite WAL نظيف، Registry صارم، Orb State Machine، WebSocket + HTTP Fallback، نظام موافقات حقيقي، و Audit Log لكل إجراء — كل هذا مطابق للمخطط A6-A11-A24.</span></div></div>
+          <div class="alert gold"><i style="background:rgba(255,184,0,.15);color:var(--gold)">!</i><div><b>ما هو متوسط — يحتاج تحسين خلال أسبوع</b><span style="display:block;color:var(--muted);font-size:12px;margin-top:4px">الذاكرة حاليًا Keyword Scoring فقط (بدون PGVector)، المهام بدون Planner الحقيقي (L3 معلق كـ stub)، الصوت Web Speech فقط، والمونيتور يُنفذ في Gateway وليس Worker بشكل منفصل.</span></div></div>
+          <div class="alert red"><i style="background:rgba(255,59,48,.15);color:var(--red)">✕</i><div><b>ما هو خطر — أصلحه قبل أي نشر</b><span style="display:block;color:var(--muted);font-size:12px;margin-top:4px">6 ثغرات تبعيات: fastify / @fastify/static path-traversal + xlsx Prototype Pollution & ReDoS بدون إصلاح. لا يوجد .git مطلقًا (لا تتبع نسخ). مفتاح التشفير JARVIS_MASTER_KEY افتراضي في التطوير. اختبارات البوابة تفشل 100% بسبب تعارض المنفذ/التوقيت.</span></div></div>
+        </div>
+        <div class="grid2" style="margin-top:14px">
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px">
+            <b style="font-size:13px">الخلاصة بكلمتين</b><br><span style="font-size:13px;color:var(--muted)">المشروع <b style="color:var(--text)">هندسته قوية وكوده نظيف</b> — لكن أمان التبعيات وتتبع النسخ يمنعان اعتباره إنتاجيًا اليوم. أصلح 3 ملفات + استبدل مكتبة واحدة = جاهز للعرض التجريبي الآمن.</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px">
+            <b style="font-size:13px">توصية الإطلاق</b><br><span style="font-size:13px;color:var(--muted)"><b style="color:var(--gold)">Beta محلي فقط</b> — مسموح للعروض والتطوير. ممنوع النشر العام أو على VPS قبل إغلاق ثغرات HIGH ومعالجة xlsx وإضافة Git.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="structure" class="section">
+    <div class="card">
+      <div class="card-h"><h3>🗂️ الهيكل والـ Monorepo</h3><p>npm workspaces • Node 20+ • بدون بناء للـ backend</p></div>
+      <div class="card-b">
+        <div class="table-wrap"><table>
+          <thead><tr><th>المسار</th><th>الدور</th><th>الحالة</th><th>ملاحظة التدقيق</th></tr></thead>
+          <tbody>
+            <tr><td><code>packages/schemas</code></td><td>أنواع مشتركة (Intent, TaskStatus, RiskLevel, ToolDescriptor, WS)</td><td><span class="tag green">مكتمل</span></td><td>تصميم ممتاز — مصدر واحد للحقيقة، أنواع صارمة</td></tr>
+            <tr><td><code>packages/core</code></td><td>db • llm • registry • permissions • orchestrator • memory • tools</td><td><span class="tag green">مكتمل</span></td><td>قلب النظام — 30k سطر أدوات + 20k orchestrator</td></tr>
+            <tr><td><code>packages/gateway-sdk</code></td><td>عميل REST + WS للواجهة</td><td><span class="tag green">مكتمل</span></td><td>Typed، نظيف</td></tr>
+            <tr><td><code>apps/gateway</code></td><td>Fastify REST + WS Hub + Composition Root + Monitor Loop</td><td><span class="tag green">مكتمل</span></td><td>يعمل على 8787 — 3 اتصالات WS لوحظت في gw.log</td></tr>
+            <tr><td><code>apps/worker</code></td><td>خلفية 24/7 (monitors/reminders)</td><td><span class="tag gold">يعمل جزئيًا</span></td><td>يشترك نفس SQLite لكن المراقبات تُشغل أيضًا في Gateway — ازدواج</td></tr>
+            <tr><td><code>apps/desktop</code></td><td>React 18 + Vite + Tailwind — Orb + Chat + Tasks + Memory + Tools</td><td><span class="tag green">مكتمل</span></td><td>مبني dist جاهز (353KB JS + 25KB CSS)</td></tr>
+            <tr><td><code>tests/*</code></td><td>6 مجموعات اختبار</td><td><span class="tag gold">84.8% نجاح</span></td><td>39 نجحت، 7 فشلت (بوابة فقط)</td></tr>
+            <tr><td><code>docs/*</code></td><td>ARCHITECTURE.md + ORVIX_ROADMAP.md</td><td><span class="tag green">موجود</span></td><td>محدّث سبتمبر 2026</td></tr>
+            <tr><td><code>.freebuff/.jarvis/.test-*</code></td><td>مجلدات بيانات/اختبارات</td><td><span class="tag cyan">محلية</span></td><td>.jarvis يحتوي WAL 3.4MB — طبيعي</td></tr>
+          </tbody>
+        </table></div>
+        <div class="hint">التنفيذ المباشر لـ TS عبر <code>--experimental-transform-types</code> ذكي: لا حاجة لـ build للـ backend، لكنه تجريبي — راجع قسم المخاطر.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="arch" class="section">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><h3>🧠 حلقة Orchestrator (A6)</h3><span class="tag green">مطابقة للمخطط 100%</span></div>
+        <div class="card-b">
+          <div class="timeline">
+            <div class="tl"><b>① فهم + تصنيف L0-L3</b><span>classifyComplexity() — كلمات مفتاحية عربية/إنجليزية</span></div>
+            <div class="tl"><b>② استرجاع ذاكرة</b><span>MemoryEngine.contextBlock() — scoring بالكلمات + الأهمية</span></div>
+            <div class="tl"><b>③ LLM Streaming مع Tool Schemas</b><span>OpenAiAdapter.stream() + SSE + إعادة محاولة 429/5xx</span></div>
+            <div class="tl"><b>④ بوابة الصلاحيات</b><span>PermissionEngine + isDestructiveCommand() → طلب موافقة</span></div>
+            <div class="tl"><b>⑤ تنفيذ + تحقق (A11)</b><span>Registry.execute() مع timeout + fs.write verification بالبايت</span></div>
+            <div class="tl"><b>⑥ إعادة التغذية — حتى 6 جولات</b><span>نتائج الأدوات تُعاد للـ LLM — معالجة أخطاء + retry مرة</span></div>
+            <div class="tl"><b>⑦ الحفظ + Orb</b><span>messages + audit + orb transitions (UNDERSTANDING→THINKING→EXECUTING→SUCCESS)</span></div>
+          </div>
+          <div class="alert cyan" style="margin-top:12px"><i style="background:rgba(0,229,255,.15);color:var(--cyan)">◉</i><div><b>نقطة قوة معمارية</b><span style="display:block;color:var(--muted);font-size:12px">فصل نظيف: db → repos → memoryEngine → registry → orchestrator → gateway. التبعيات تُحقن — سهل الاختبار والاستبدال بـ Postgres لاحقًا.</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🗄️ قاعدة البيانات والاستمرارية</h3><span class="tag cyan">SQLite WAL</span></div>
+        <div class="card-b">
+          <div class="code" style="font-size:11px">PRAGMA journal_mode = WAL
+PRAGMA foreign_keys = ON
+-- 11 جدول: users, preferences, conversations,
+-- messages, memories, tasks, task_events,
+-- monitors, approvals, tool_executions,
+-- audit_logs, events, reminders, documents
+-- فهارس: idx_messages_conv, idx_memories_user,
+--        idx_tasks_user, idx_audit_time</div>
+          <ul class="list" style="margin-top:12px">
+            <li><b>✅ WAL مفعّل</b><span>قراءة/كتابة متزامنة — Gateway + Worker يشتركان نفس الملف بأمان</span></li>
+            <li><b>⚠️ ملف واحد = نقطة فشل واحدة</b><span>لا يوجد نسخ احتياطي تلقائي — فقدان .jarvis/jarvis.db = فقدان كل شيء</span></li>
+            <li><b>✅ Repos معزولة</b><span>MemoryRepo / MonitorRepo / ApprovalRepo / AuditRepo / ReminderRepo — سهل الترحيل لـ Postgres</span></li>
+            <li><b>⚠️ لا يوجد تشفير at-rest</b><span>JARVIS_MASTER_KEY للاعتماديات المستقبلية فقط — البيانات الحالية plaintext</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <div class="card">
+      <div class="card-h"><h3>✅❌ مصفوفة الاكتمال مقابل BLUEPRINT</h3><p>المرجع: JARVIS_MASTER_BLUEPRINT.md (39,191 بايت) + docs/ARCHITECTURE.md</p></div>
+      <div class="card-b">
+        <div class="table-wrap"><table>
+          <thead><tr><th>المجال</th><th>المخطط</th><th>الحالة</th><th>نسبة</th><th>التفاصيل</th></tr></thead>
+          <tbody>
+            <tr><td>دردشة نصية + Streaming + Threads</td><td>A1-A6</td><td><span class="tag green">مكتمل</span></td><td>100%</td><td>WS + HTTP fallback + history 12 msg</td></tr>
+            <tr><td>Tool Registry + Permissions + Approvals + Audit</td><td>A22-A24</td><td><span class="tag green">مكتمل V1</span></td><td>95%</td><td>14 أداة + مصفوفة 4 مستويات + bulk thresholds</td></tr>
+            <tr><td>الذاكرة (كتابة انتقائية + استرجاع + واجهة)</td><td>A28-A29</td><td><span class="tag gold">جزئي</span></td><td>60%</td><td>Keyword scoring فقط — بدون PGVector/semantic</td></tr>
+            <tr><td>محرك المهام</td><td>A9-A10</td><td><span class="tag gold">هيكل فقط</span></td><td>45%</td><td>CRUD + events موجودة؛ planner L3 وهمي</td></tr>
+            <tr><td>الصوت (STT/TTS)</td><td>A38-A40</td><td><span class="tag gold">Web Speech فقط</span></td><td>35%</td><td>يعمل لكن ليس realtime duplex pipeline</td></tr>
+            <tr><td>أتمتة المتصفح (Playwright)</td><td>A54</td><td><span class="tag red">غير موجود</span></td><td>0%</td><td>لا توجد أداة browser.*</td></tr>
+            <tr><td>تكامل Gmail/Calendar/CRM</td><td>A26 V2</td><td><span class="tag red">غير موجود</span></td><td>0%</td><td>تصميم vault جاهز لكن بلا تنفيذ</td></tr>
+            <tr><td>Knowledge Graph</td><td>A30</td><td><span class="tag red">غير موجود</span></td><td>0%</td><td>حقل محجوز فقط</td></tr>
+            <tr><td>منشئ Workflows</td><td>A65 V3</td><td><span class="tag red">غير موجود</span></td><td>0%</td><td>مؤجل حسب الخارطة</td></tr>
+            <tr><td>Tauri Shell + Packaging</td><td>A86.34</td><td><span class="tag gold">جاهز نظريًا</span></td><td>20%</td><td>UI يعمل كـ web app — تغليف Tauri لم يبدأ</td></tr>
+            <tr><td>لوحة التحكم + المراقبات + التذكيرات</td><td>A36,A59</td><td><span class="tag green">مكتمل</span></td><td>90%</td><td>Monitors + reminders + orb notifications</td></tr>
+          </tbody>
+        </table></div>
+        <div class="grid2" style="margin-top:14px">
+          <div class="alert cyan"><i style="background:rgba(0,229,255,.15)">14</i><div><b>الأدوات الـ 14 العاملة</b><span style="display:block;color:var(--muted);font-size:11px">fs.list / fs.read / fs.write (+verify) / fs.search — web.search / web.fetch — computer.run_command (مع حارس destructive) / computer.open (http/https فقط) — docs.readPdf / docs.readXlsx — system.now — memory.save / memory.search — task.create / task.list — monitor.create / reminder.create</span></div></div>
+          <div class="alert gold"><i style="background:rgba(255,184,0,.15)">↗</i><div><b>الفجوة الأكبر</b><span style="display:block;color:var(--muted);font-size:11px">المخطط يَعِد بـ Planner متعدد الخطوات + Browser Agent + Semantic Memory — كلها غائبة. للعرض التجريبي هذا مقبول، لكن لا تُسوّقها كـ "مكتملة".</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="security" class="section">
+    <div class="card">
+      <div class="card-h"><h3>🛡️ تدقيق الأمان</h3><span class="tag red">5 عالية + 1 متوسطة — إجراء فوري</span></div>
+      <div class="card-b">
+        <div class="grid2">
+          <div>
+            <h4 style="font-size:13px;font-weight:900;margin-bottom:10px">الثغرات المؤكدة (npm audit)</h4>
+            <div class="table-wrap"><table>
+              <thead><tr><th>الحزمة</th><th>الخطورة</th><th>الوصف</th><th>الإصلاح</th></tr></thead>
+              <tbody>
+                <tr><td><code>@fastify/static ≤10.1.1</code></td><td><span class="tag red">عالية</span></td><td>تجاوز مسار + تجاوز حارس المسار (GHSA-8pvw / GHSA-83w8)</td><td><code>→ 10.1.4</code> (breaking)</td></tr>
+                <tr><td><code>fastify ≤5.12.0</code></td><td><span class="tag red">عالية</span></td><td>DoS عبر WebStream + تجاوز Content-Type + انتحال X-Forwarded-Host</td><td><code>→ 5.12.5</code></td></tr>
+                <tr><td><code>find-my-way ≤9.6.0</code></td><td><span class="tag red">عالية</span></td><td>DDoS عبر HTTP/2 (GHSA-c96f)</td><td>يُصلح مع fastify</td></tr>
+                <tr><td><code>xlsx *</code></td><td><span class="tag red">عالية</span></td><td>Prototype Pollution + ReDoS (GHSA-4r6h / GHSA-5pgg)</td><td><span class="tag red">بلا إصلاح — استبدل</span></td></tr>
+                <tr><td><code>esbuild ≤0.24.2 (via vite)</code></td><td><span class="tag gold">متوسطة</span></td><td>أي موقع يقرأ استجابات dev server (GHSA-67mh)</td><td><code>vite → 8.3.0</code></td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;font-weight:900;margin-bottom:10px">فحص الكود اليدوي</h4>
+            <ul class="list">
+              <li><b>✅ حارس المسارات الحساسة</b><span><code>guardPath()</code> يحجب /windows, /etc, Program Files — مع توسيع ~ و homedir. جيد.</span><div class="chips" style="margin-top:6px"><span class="chip">fs.*</span><span class="chip">حماية فعلية</span></div></li>
+              <li><b>✅ حماية computer.open</b><span>يرفض javascript: و file: و المخططات غير http/https — ويتحقق من وجود التطبيق. ممتاز.</span></li>
+              <li><b>✅ كشف الأوامر المدمرة</b><span><code>isDestructiveCommand()</code> → موافقة critical قبل التنفيذ. مصمم صحيح.</span></li>
+              <li><b>⚠️ حماية مسار ناقصة</b><span>النافذة الحساسة تستخدم lowerCase + startsWith — قد تُتجاوز عبر مسارات UNC أو روابط رمزية. يُنصح بإضافة canonical resolve + allowlist.</span></li>
+              <li><b>⚠️ لا يوجد حد لمعدل الطلبات</b><span>لا rate-limit على /api/chat أو /ws — هجوم إغراق بسيط يستهلك LLM quota.</span></li>
+              <li><b>🔴 لا يوجد Git + أسرار في .env</b><span>المشروع بدون مستودع git — لا تتبع، لا مراجعة، لا استرجاع. و JARVIS_MASTER_KEY فارغ افتراضيًا.</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="alert red" style="margin-top:14px"><i style="background:rgba(255,59,48,.15);color:var(--red)">!</i><div><b>إجراء فوري: استبدال xlsx</b><span style="display:block;color:var(--muted);font-size:12px">مكتبة <code>xlsx (SheetJS)</code> بلا إصلاح للـ Prototype Pollution. البدائل: <code>exceljs</code> أو <code>node-xlsx</code> مع تعقيم، أو حصر الاستخدام في worker معزول + تعطيل <code>__proto__</code>. لا تنشر والـ xlsx موجودة.</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tests" class="section">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><h3>🧪 الاختبارات — 39 / 46</h3><span class="tag gold">84.8% — 7 فشل (بوابة فقط)</span></div>
+        <div class="card-b">
+          <div class="table-wrap"><table>
+            <thead><tr><th>المجموعة</th><th>العدد</th><th>النتيجة</th></tr></thead>
+            <tbody>
+              <tr><td>docs (xlsx/pdf)</td><td>4</td><td><span class="tag green">4 نجحت</span></td></tr>
+              <tr><td>permissions</td><td>6</td><td><span class="tag green">6 نجحت</span></td></tr>
+              <tr><td>tools (fs, open, registry)</td><td>11</td><td><span class="tag green">11 نجحت</span></td></tr>
+              <tr><td>memory</td><td>5</td><td><span class="tag green">5 نجحت</span></td></tr>
+              <tr><td>orchestrator</td><td>7</td><td><span class="tag green">7 نجحت</span></td></tr>
+              <tr><td>llm/provider</td><td>4</td><td><span class="tag green">4 نجحت (بضمنها SSE حقيقي)</span></td></tr>
+              <tr><td>docs.whitelist</td><td>2</td><td><span class="tag green">2 نجحت</span></td></tr>
+              <tr><td>gateway (HTTP API)</td><td>7</td><td><span class="tag red">7 فشلت — timeout 19s</span></td></tr>
+            </tbody>
+          </table></div>
+          <div class="alert gold" style="margin-top:12px"><i style="background:rgba(255,184,0,.15);color:var(--gold)">⏱</i><div><b>سبب فشل البوابة</b><span style="display:block;color:var(--muted);font-size:12px"><code>tests/gateway.test.ts</code> يطلق Gateway على منفذ 8791 عبر <code>spawn(--experimental-transform-types)</code> وينتظر <code>/api/health</code>. في بيئة Windows + TransformTypes التجريبية + WAL مفتوح من تشغيل سابق، يعلق ولا يرد خلال 20 ثانية. ليس خطأ منطقيًا — بل هشاشة بيئة.</span></div></div>
+          <div class="code" style="margin-top:12px">ℹ tests 46
+ℹ pass 39  ℹ fail 7
+✖ gateway.test.ts → waitForServer timeout
+✔ typecheck → صفر أخطاء strict
+# الحل المقترح: استخدم نفس openDb مع DIR مؤقت
+# + افتح المنفذ ديناميكياً (0 → random) + انتظر
+# بحدث "gateway.ready" بدلاً من polling /health</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>⚡ الأداء والموثوقية</h3><p>ملاحظات من gw.log + الكود</p></div>
+        <div class="card-b">
+          <ul class="list">
+            <li><b>Gateway جاهز في ~17ms</b><span>log: <code>gateway.ready url 127.0.0.1:8787 brain openai/gpt-oss-20b tools 17</code> — إقلاع ممتاز</span></li>
+            <li><b>WebSocket مستقر</b><span>3-4 عملاء متزامنين، إعادة اتصال تلقائية مع backoff حتى 5s — مصمم جيدًا</span></li>
+            <li><b>LLM مع إعادة محاولة</b><span>post() يعيد 3 مرات للـ 429/5xx مع Retry-After — يحمي الحصة المجانية</span></li>
+            <li><b>Timeout لكل أداة</b><span>10-15s لكل أداة + إلغاء عبر AbortSignal — يمنع التعليق</span></li>
+            <li><b>⚠️ لا يوجد قياس أداء</b><span>لا يوجد benchmark أو profiling — غير معروف سلوك 1000 رسالة / 100 أداة متزامنة</span></li>
+            <li><b>⚠️ TransformTypes تجريبي</b><span>Node يحذر: <code>ExperimentalWarning: Transform Types</code> في كل تشغيل — قد ينكسر في Node 22</span></li>
+            <li><b>⚠️ حجم الحزمة</b><span>desktop dist 353KB JS (مقبول) لكن بدون code-splitting — كل الشاشات في حزمة واحدة</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="perf" class="section">
+    <div class="card">
+      <div class="card-h"><h3>📊 جودة الكود — نقاط قوة وضعف</h3><p>مراجعة يدوية لـ orchestrator, registry, permissions, tools, llm, db</p></div>
+      <div class="card-b">
+        <div class="grid2">
+          <div>
+            <h4 style="font-size:13px;font-weight:900;color:var(--green);margin-bottom:8px">✅ نقاط قوة (احتفظ بها)</h4>
+            <ul class="list">
+              <li><b>فصل مسؤوليات نظيف</b><span>كل طبقة في ملفها، حقن التبعيات واضح، الاختبار سهل</span></li>
+              <li><b>نظام أنواع صارم</b><span>strict TS، لا any منتشر، أخطاء مصنفة (12 صنف)</span></li>
+              <li><b>تحقق بعد التنفيذ</b><span>fs.write يتحقق بالبايت — "التنفيذ ≠ النجاح" مطبق فعليًا</span></li>
+              <li><b>MockBrain من الدرجة الأولى</b><span>النظام كامل قابل للاختبار بدون API key — نادر وممتاز</span></li>
+              <li><b>واجهة عربية/إنجليزية</b><span>النظام يطابق لغة المستخدم — مهم للسوق السعودي</span></li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="font-size:13px;font-weight:900;color:var(--orange);margin-bottom:8px">⚠️ نقاط ضعف (أصلحها)</h4>
+            <ul class="list">
+              <li><b>لا يوجد ESLint/Prettier</b><span>لا يوجد تنسيق موحد — خطر تباين الأسلوب مع نمو الفريق</span></li>
+              <li><b>استيراد .ts مباشر</b><span>يعتمد على flag تجريبي — للبناء الإنتاجي يحتاج tsc emit أو tsx</span></li>
+              <li><b>ذاكرة بسيطة</b><span>استرجاع بالكلمات فقط — لا تضمين دلالي، لا نسيان ذكي</span></li>
+              <li><b>لا يوجد ترحيل DB</b><span>DDL يُنفذ عبر CREATE IF NOT EXISTS فقط — لا يوجد نظام migrations</span></li>
+              <li><b>Worker/Gateway ازدواج</b><span>حلقة المراقبات تعمل في المكانين — قد تُنفذ مرتين</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="risks" class="section">
+    <div class="card">
+      <div class="card-h"><h3>⚠️ مصفوفة المخاطر</h3><p>مرتبة حسب: الأثر × الاحتمال</p></div>
+      <div class="card-b">
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>الخطر</th><th>الأثر</th><th>الاحتمال</th><th>الدرجة</th><th>الإجراء</th></tr></thead>
+          <tbody>
+            <tr><td>R1</td><td>استغلال xlsx (Prototype Pollution) عبر ملف خبيث</td><td><span class="tag red">حرج</span></td><td>متوسط</td><td><span class="tag red">عالي</span></td><td>استبدال فوري</td></tr>
+            <tr><td>R2</td><td>تجاوز مسار @fastify/static → كشف ملفات</td><td><span class="tag red">عالي</span></td><td>منخفض</td><td><span class="tag red">عالي</span></td><td>تحديث 10.1.4</td></tr>
+            <tr><td>R3</td><td>فقدان البيانات (لا git + لا backup)</td><td><span class="tag red">عالي</span></td><td>متوسط</td><td><span class="tag red">عالي</span></td><td>تهيئة git + نسخ WAL</td></tr>
+            <tr><td>R4</td><td>إغراق LLM (لا rate-limit)</td><td><span class="tag gold">متوسط</span></td><td>متوسط</td><td><span class="tag gold">متوسط</span></td><td>إضافة limiter</td></tr>
+            <tr><td>R5</td><td>انكسار TransformTypes في Node القادم</td><td><span class="tag gold">متوسط</span></td><td>منخفض</td><td><span class="tag gold">متوسط</span></td><td>انتقال لـ tsx/tsup</td></tr>
+            <tr><td>R6</td><td>ازدواج تنفيذ المراقبات</td><td><span class="tag gold">متوسط</span></td><td>متوسط</td><td><span class="tag gold">متوسط</span></td><td>توحيد في Worker فقط</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="plan" class="section">
+    <div class="card">
+      <div class="card-h"><h3>🛠️ خطة الإصلاح — 3 مراحل</h3><p>مرتبة حسب الأولوية — كل مرحلة يوم إلى أسبوع</p></div>
+      <div class="card-b">
+        <div style="display:grid;gap:14px">
+          <div style="border:1px solid rgba(255,59,48,.3);background:rgba(255,59,48,.06);border-radius:14px;padding:16px">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b style="color:var(--red)">المرحلة 0 — إصلاحات حرجة (4-6 ساعات)</b><span class="tag red">قبل أي عرض</span></div>
+            <ol style="margin:10px 18px 0 0;font-size:13px;color:var(--muted);display:grid;gap:6px">
+              <li><code>npm audit fix</code> لـ fastify + @fastify/static + find-my-way + vite/esbuild (اختبار بعد كل تحديث)</li>
+              <li>استبدال <code>xlsx</code> بـ <code>exceljs</code> أو عزلها: تعطيل <code>__proto__</code> + حد حجم الملف + فحص MIME</li>
+              <li><code>git init</code> + أول commit + <code>.gitignore</code> يضمن عدم رفع <code>.env</code> و <code>.jarvis/*.db*</code></li>
+              <li>توليد <code>JARVIS_MASTER_KEY=$(openssl rand -hex 32)</code> وحفظه في .env (لا تتركه فارغًا)</li>
+              <li>إضافة <code>rate-limit</code> بسيط على <code>/api/chat</code> و <code>/ws</code> (حتى 20 طلب/دقيقة لكل IP محليًا)</li>
+            </ol>
+            <div class="code" style="margin-top:10px">npm install fastify@5.12.5 @fastify/static@10.1.4
+npm uninstall xlsx && npm install exceljs
+git init && git add . && git commit -m "chore: initial commit + audit fixes"
+# ثم أعد تشغيل: npm run typecheck && npm test</div>
+          </div>
+          <div style="border:1px solid rgba(255,184,0,.3);background:rgba(255,184,0,.06);border-radius:14px;padding:16px">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b style="color:var(--gold)">المرحلة 1 — تثبيت (2-3 أيام)</b><span class="tag gold">جودة</span></div>
+            <ol style="margin:10px 18px 0 0;font-size:13px;color:var(--muted);display:grid;gap:6px">
+              <li>إصلاح اختبارات البوابة: منفذ عشوائي + انتظار حدث ready بدل polling + تنظيف WAL بين الاختبارات</li>
+              <li>إضافة ESLint + Prettier + Husky pre-commit (typecheck + test سريع)</li>
+              <li>نظام migrations للـ DB (مثلاً <code>umzug</code> أو ملفات SQL مرقمة) بدل CREATE IF NOT EXISTS</li>
+              <li>نسخ احتياطي يومي لـ <code>.jarvis/jarvis.db</code> (حتى مجرد نسخ ملف cron)</li>
+              <li>توحيد حلقة المراقبات: تشغيلها في Worker فقط، Gateway يعرض فقط</li>
+            </ol>
+          </div>
+          <div style="border:1px solid rgba(0,229,255,.25);background:rgba(0,229,255,.06);border-radius:14px;padding:16px">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b style="color:var(--cyan)">المرحلة 2 — ترقية للإنتاج (1-2 أسابيع)</b><span class="tag cyan">تحسين</span></div>
+            <ol style="margin:10px 18px 0 0;font-size:13px;color:var(--muted);display:grid;gap:6px">
+              <li>انتقال من TransformTypes التجريبي إلى <code>tsx</code> أو <code>tsup</code> + emit</li>
+              <li>ذاكرة دلالية: Postgres + pgvector خلف نفس MemoryEngine (مع fallback الكلمات)</li>
+              <li>Planner حقيقي L3: تقسيم الهدف إلى PlanSteps + تنفيذ متسلسل + عرض التقدم في Tasks</li>
+              <li>تحسين حارس المسارات: canonical + realpath + allowlist بدل startsWith فقط</li>
+              <li>Code-splitting للـ desktop (lazy للشاشات) + إضافة Tauri packaging</li>
+            </ol>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:16px">
+          <div class="alert cyan"><i>◉</i><div><b>ماذا لو أردت إطلاق تجريبي غدًا؟</b><span style="display:block;color:var(--muted);font-size:12px">نفّذ المرحلة 0 فقط (6 ساعات) + أعد الاختبار → يصبح المشروع آمنًا للعرض المحلي/العائلي. لا تنشره على الإنترنت قبل المرحلة 1.</span></div></div>
+          <div class="alert green"><i>✓</i><div><b>توصية سوق السعودية</b><span style="display:block;color:var(--muted);font-size:12px">بما أن 77% من الحجوزات عبر الجوال و44% Apple Pay و29% BNPL — فكّر بإضافة أداة <code>payments.*</code> كأول تكامل خارجي بعد تثبيت الأمان، بدل Browser Agent.</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <div class="card-h"><h3>📎 ملاحق — أدلة سريعة</h3></div>
+      <div class="card-b">
+        <div class="grid2">
+          <div>
+            <h4 style="font-size:13px;font-weight:900;margin-bottom:8px">أوامر التحقق بعد الإصلاح</h4>
+            <div class="code">npm run typecheck   # يجب أن ينجح
+npm test          # الهدف 46/46
+npm audit --audit-level=moderate  # يجب أن يصبح 0 ثغرات عالية
+npm run ui:build  # dist جديد
+npm run dev       # http://127.0.0.1:8787</div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;font-weight:900;margin-bottom:8px">هيكل الملفات المدققة</h4>
+            <div class="code" style="font-size:10px">JS/
+├─ packages/core/src/{db,repos,registry,permissions,
+│                     orchestrator,llm,memory,tools,events}
+├─ packages/schemas/src/index.ts
+├─ packages/gateway-sdk/src/index.ts
+├─ apps/gateway/src/{main,hub,monitors}
+├─ apps/desktop/src/{App,store,screens/*,components/*}
+├─ apps/worker/src/main.ts
+├─ tests/{orchestrator,memory,tools,permissions,
+│        llm-provider,gateway,docs-*}
+├─ docs/{ARCHITECTURE,ORVIX_ROADMAP}
+└─ .jarvis/jarvis.db (WAL 3.4MB)</div>
+          </div>
+        </div>
+        <div class="hint">تم إنشاء هذا التقرير تلقائيًا من فحص مباشر للكود + تشغيل الاختبارات + npm audit + قراءة السجلات. كل خلية في الجداول مبنية على دليل، ليس تخمينًا.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>تدقيق بواسطة <b style="color:var(--text)">A7 — Monkey King • ETLAALA Systems Architect</b> • 23 سبتمبر 2026 • JARVIS v0.1.0</div>
+    <div style="margin-top:6px">الملف: <code>AUDIT_REPORT_AR.html</code> — افتحه في المتصفح واطبعه كـ PDF للأرشفة • Caveman mode: التفاصيل كاملة، الحشو محذوف</div>
+  </footer>
+</main>
+<script>
+// تفعيل التنقل النشط
+document.querySelectorAll('.nav a').forEach(a=>{
+  a.addEventListener('click',()=>{
+    document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

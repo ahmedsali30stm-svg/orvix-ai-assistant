@@ -1,0 +1,25 @@
+{
+  "name": "@jarvis/gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/main.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^10.1.4",
+    "@jarvis/core": "*",
+    "@jarvis/gateway-sdk": "*",
+    "@jarvis/schemas": "*",
+    "fastify": "^5.12.5",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.6.0"
+  }
+}

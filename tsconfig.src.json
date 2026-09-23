@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "packages/schemas/src/**/*.ts",
+    "packages/core/src/**/*.ts",
+    "packages/gateway-sdk/src/**/*.ts",
+    "apps/gateway/src/**/*.ts",
+    "apps/worker/src/**/*.ts",
+    "tests/**/*.ts"
+  ]
+}
