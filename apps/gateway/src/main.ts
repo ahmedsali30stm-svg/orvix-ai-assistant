@@ -46,6 +46,7 @@ import {
 import type { OrbState, WsClientMessage } from "@jarvis/schemas";
 import { WsHub } from "./hub.ts";
 import { startMonitors } from "./monitors.ts";
+import { registerVoiceRoutes } from "./voice.ts";
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8787;
 const DATA_DIR = process.env.JARVIS_DATA_DIR ?? ".jarvis";
@@ -244,6 +245,9 @@ app.post("/api/open-whitelist", async (req) => {
   audit.log(USER, "system", "open_whitelist.set", targets.join(",").slice(0, 200));
   return { ok: true, targets: permissions.listAlwaysAllowed() };
 });
+
+// Voice status & local TTS/STT (Phase 1 — local after download, fallback = Web Speech)
+registerVoiceRoutes(app as never);
 
 // Audit
 app.get("/api/audit", async () => audit.list(USER, 200));

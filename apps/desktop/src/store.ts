@@ -143,27 +143,62 @@ export function useJarvisStore() {
     };
   }, [refreshData]);
 
+  // ── Abortable turn (for barge-in) ──────────────────────────────────────
+  const abortRef = useRef<AbortController | null>(null);
+  const abortCurrent = useCallback(() => {
+    if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setOrb("IDLE");
+  }, []);
+
   // ── Actions ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, opts?: { signal?: AbortSignal }) => {
       if (!text.trim()) return;
+      // abort previous if any
+      if (abortRef.current) { try { abortRef.current.abort(); } catch {} }
+      const ac = new AbortController();
+      const sig = opts?.signal ?? ac.signal;
+      abortRef.current = ac;
+      // also wire external signal to abort this one
+      if (opts?.signal) {
+        opts.signal.addEventListener("abort", () => { try{ ac.abort(); }catch{} }, { once: true });
+      }
       setEntries((prev) => [...prev, { id: `u-${Date.now()}`, role: "user", content: text }]);
       setOrb("UNDERSTANDING");
       if (wsReady && wsRef.current) {
-        wsRef.current.send({ type: "chat.send", threadId, text });
+        // WS path: server will handleTurn; client abort just stops rendering
+        // Send abortable via WS by also sending HTTP abort signal through a side channel
+        // For now, WS path is not abortable server-side — we mark client interrupted and will ignore next deltas
+        wsRef.current.send({ type: "chat.send", threadId, text } as never);
+        // store abort to allow interrupt to hide streaming
+        (wsRef.current as unknown as { _abort?: AbortController })._abort = ac;
+        ac.signal.addEventListener("abort", () => {
+          setEntries((prev) => prev.map((e) => e.streaming ? { ...e, streaming: false, content: e.content + " [interrupted]" } : e));
+          setOrb("IDLE");
+        }, { once: true });
       } else {
-        // HTTP fallback
+        // HTTP fallback with true abort
         fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ threadId, text }),
+          signal: sig,
         })
           .then((r) => r.json())
           .then((r: { reply: string }) => {
+            if (ac.signal.aborted) return;
             setEntries((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", content: r.reply }]);
             refreshData();
           })
-          .catch(() => setEntries((prev) => [...prev, { id: `e-${Date.now()}`, role: "assistant", content: "(gateway unreachable)" }]));
+          .catch((err) => {
+            if (String(err).includes("abort") || ac.signal.aborted) {
+              setEntries((prev) => prev.map((e) => e.streaming ? { ...e, streaming: false } : e));
+              return;
+            }
+            setEntries((prev) => [...prev, { id: `e-${Date.now()}`, role: "assistant", content: "(gateway unreachable)" }]);
+          })
+          .finally(() => { if (abortRef.current === ac) abortRef.current = null; });
       }
     },
     [threadId, wsReady, refreshData],
@@ -213,7 +248,7 @@ export function useJarvisStore() {
   );
 
   return {
-    connected, orb, activity, brain, setOrbLocal, stopSpeaking,
+    connected, orb, activity, brain, setOrbLocal, stopSpeaking, abortCurrent,
     threadId, threads, entries, sendMessage, loadThread,
     tasks, selectedTask, openTask, setSelectedTask,
     tools, memories, saveMemory, deleteMemory,

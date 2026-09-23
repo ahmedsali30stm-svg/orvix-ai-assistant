@@ -6,3 +6,9 @@ dist/
 *.db-wal
 *.db-shm
 .jarvis/
+
+personal-memory*.json
+models/
+tools/piper/
+tools/whisper/
+

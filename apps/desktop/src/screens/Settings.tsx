@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { JarvisClient } from "@jarvis/gateway-sdk";
 import { IconCheck, IconX } from "../components/icons";
+import { VoiceSettings } from "../components/VoiceSettings";
 
 const client = new JarvisClient();
 
@@ -49,8 +50,9 @@ export function Settings() {
   };
 
   return (
-    <div className="p-6 overflow-y-auto h-full max-w-3xl">
-      <h1 className="brand-mark text-lg font-semibold mb-4">Settings</h1>
+    <div className="p-6 overflow-y-auto h-full max-w-3xl space-y-4">
+      <h1 className="brand-mark text-lg font-semibold">Settings</h1>
+      <VoiceSettings />
 
       {/* provider */}
       <div className="glass rounded-2xl p-4 flex flex-col gap-2 text-sm">

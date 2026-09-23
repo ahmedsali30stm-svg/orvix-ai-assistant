@@ -21,8 +21,9 @@ export function Home({ store }: { store: Store }) {
   const [partial, setPartial] = useState("");
   const [listening, setListening] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  // Spec Phase 5: wake word experimental — disabled by default until barge-in stable
   const [wakeOn, setWakeOn] = useState(() => {
-    try { return localStorage.getItem("orvix.wake") !== "0"; } catch { return true; }
+    try { return localStorage.getItem("orvix.wake") === "1"; } catch { return false; }
   });
   const [wakeListening, setWakeListening] = useState(false);
   const [panelsOpen, setPanelsOpen] = useState(true);
@@ -87,6 +88,9 @@ export function Home({ store }: { store: Store }) {
 
   // ── Wake word: "hey orvix" continuous listener ──
   const triggerCommandListening = (initial?: string) => {
+    // barge-in: abort previous turn + stop TTS
+    try { store.abortCurrent?.(); } catch {}
+    try { store.stopSpeaking?.(); } catch {}
     // stop wake loop while capturing command
     wakeRef.current?.stop();
     setWakeListening(false);
@@ -98,7 +102,7 @@ export function Home({ store }: { store: Store }) {
       },
       onFinal: (t) => {
         setPartial("");
-        store.stopSpeaking?.();
+        try { store.stopSpeaking?.(); } catch {}
         import("../voice/voice").then(({ stripWakeWord }) => {
           const merged = (initial ? initial + " " : "") + t;
           const clean = stripWakeWord(merged).trim() || merged.trim();
@@ -200,12 +204,52 @@ export function Home({ store }: { store: Store }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wakeOn, listening]);
 
-  // Speak finished assistant replies aloud.
+  // Ctrl+Space = push-to-talk (reliable fallback per spec)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.code === "Space") {
+        e.preventDefault();
+        if (listening) {
+          recognizerRef.current?.stop();
+        } else {
+          // barge-in if speaking
+          try { store.abortCurrent?.(); } catch {}
+          toggleMic();
+        }
+      }
+      // Esc = stop everything
+      if (e.code === "Escape") {
+        try { store.abortCurrent?.(); } catch {}
+        try { store.stopSpeaking?.(); } catch {}
+        recognizerRef.current?.stop();
+        wakeRef.current?.stop();
+        setListening(false);
+        setWakeListening(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [listening, wakeOn]);
+
+  // Speak finished assistant replies aloud — via TTSProvider with normalization (Phase 2: sentence streaming, not 400 cut)
   useEffect(() => {
     if (!autoSpeak) return;
     const last = store.entries[store.entries.length - 1];
     if (last && last.role === "assistant" && !last.streaming && last.content) {
-      import("../voice/voice").then(({ speak }) => speak(last.content.slice(0, 400), "en-US"));
+      // Use new TTSProvider if available, else fallback
+      import("../voice/TTSProvider").then(({ PiperLocalTTS, normalizeForEnglishSpeech }) => {
+        const norm = normalizeForEnglishSpeech(last.content);
+        // try local Piper first (calls /api/voice/tts), fallback inside handles Web Speech
+        const tts = new PiperLocalTTS();
+        // stop previous if any
+        try { window.speechSynthesis.cancel(); } catch {}
+        tts.speak(norm.slice(0, 2000)).catch(() => {
+          // ultimate fallback
+          import("../voice/voice").then(({ speak }) => speak(norm.slice(0, 400), "en-US"));
+        });
+      }).catch(() => {
+        import("../voice/voice").then(({ speak }) => speak(last.content.slice(0, 400), "en-US"));
+      });
     }
   }, [store.entries, autoSpeak]);
 
